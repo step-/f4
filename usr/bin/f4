@@ -1,0 +1,111 @@
+#!/bin/sh
+
+# f4 - fuzzy file finder for Fatdog64
+# Copyright (C) step, 2020 - https://github.com/step-
+# License: GNU GPL3 or MIT
+# Requires gtkdialog compiled with vte support and fzf https://github.com/junegunn/fzf
+
+# Default search directory
+cd "${1:-.}"
+
+export TEXTDOMAIN=fatdog OUTPUT_CHARSET=UTF-8
+. gettext.sh
+
+[ -z $GTKDIALOG ] && GTKDIALOG=gtkdialog
+
+export TMPD=$(mktemp -d -p "${TMPD:-/tmp}" "${0##*/}_XXXXXX")
+chmod 700 "$TMPD" || exit 1
+trap "rm -rf \"$TMPD\"/* \"$TMPD\"; exit \$STATUS" HUP INT ALRM TERM 0 USR1 USR2
+
+# fzf supports bash and zsh
+argv="
+	argv0=\"/bin/bash\"
+	argv1=\"$TMPD/script\"
+"
+
+# show files in their folder
+show_file="rox -s"
+
+pwd > "$TMPD"/cwd
+
+echo > "$TMPD"/script '
+echo pkill -P $$ -HUP fzf > "$TMPD"/refresh-vte
+chmod +x "$TMPD"/refresh-vte
+while :; do
+	read cwd < "$TMPD"/cwd
+	cd "${cwd:-?}"
+	header=$(printf "\033[7m%s\033[0m" "$cwd")
+	fzf -m --print0 --header="$header" | xargs -0 -L1 -r '"$show_file"'
+	case ${PIPESTATUS[0]} in
+		129) : HUP; continue ;;
+		130) : ESC/^C; break ;;
+		*  ) exit ${PIPESTATUS[0]} ;;
+	esac
+	break
+done
+'
+
+# -----------------------------------------------------------------------------
+
+fzf_help_url="https://www.mankier.com/1/fzf#Extended_Search_Mode"
+i18n_powered_by=$(gettext "powered by fzf")
+i18n_select_folder=$(gettext "select folder")
+i18n_short_help=$(gettext "type your search; press ENTER to view location; Ctrl+C to quit; TAB to select multiple")
+
+# background-transparent="true"
+# background-saturation="0.2"
+# background-tint-color="#223"
+
+export GUI_MAIN='
+<window title="'"$(gettext "File search")"'" resizable="true" icon-name="gtk-find" window-position="1">
+	<vbox>
+		<hbox>
+			<comboboxtext space-fill="true" space-expand="true"
+				has-focus="false" sensitive="true"
+				fs-action="folder"
+				fs-filters-mime="inode/directory|inode/mount-point"
+				fs-folder="$CWD"
+				fs-title="'"$i18n_select_folder"'">
+				<variable>CWD</variable>
+				<input file>'"$TMPD/cwd"'</input>
+				<action signal="changed">command:echo "$CWD" > "$TMPD"/cwd</action>
+				<action signal="changed">command:"$TMPD"/refresh-vte</action>
+			</comboboxtext>
+
+			<button space-fill="false" space-expand="false" tooltip-text="'"$i18n_select_folder"'">
+				<input file stock="gtk-open"></input>
+				<action>fileselect:cwd</action>
+			</button>
+
+		</hbox>
+
+		<terminal has-focus="true" sensitive="true"
+			'"$argv"'
+			pointer-autohide="true"
+			cursor-shape="2"
+			text-background-color="#332"
+			text-foreground-color="#fff">
+			<variable export="false">vte</variable>
+			<action signal="child-exited">exit:ok</action>
+		</terminal>
+
+		<hbox>
+			<text xalign="0" max-width-chars="200" space-fill="true" space-expand="true">
+				<label>"'"$i18n_short_help"'"</label>
+			</text>
+
+			<button space-fill="false" space-expand="false" tooltip-text="'"$i18n_powered_by"'">
+				<input file stock="gtk-help"></input>
+				<action>command:xdg-open "'"$fzf_help_url"'"</action>
+			</button>
+
+		</hbox>
+
+	</vbox>
+	<action signal="delete-event">exit:abort</action>
+</window>'
+
+$GTKDIALOG --space-expand=true --space-fill=true --program=GUI_MAIN > /dev/null
+
+STATUS=$?
+
