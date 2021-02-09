@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Untitled article</title>
+</head>
+<body>
+
+<h1 id="Saving%20and%20reusing%20results">Saving and reusing results</h1>
+
+<p>The <code>C-S</code> and <code>C-Z</code> <a href="keyboard-actions.html">keys</a> let you save the current search list.  The list is saved to a file in your cache folder.  We refer to this kind of file as a <em>cached list file</em>, <em>cached file</em> or <em>list file</em>.   You can save a cached file, which lists the pathnames inside the current search path, and even keep a collection of cached files, which represent your favorite folders.  If you pass f4 the path of a cached file instead of a folder, f4 will search inside the cached file. It will start faster.  This is particularly convenient when the search path leads to a large folder, such as the whole tree under <code>&#47;</code>.  These are the steps to save and reuse a cached list for <code>&#47;</code>:</p>
+
+<pre><code class="language-sh"># passing a folder (&#47;) to build an on-the-fly list
+f4 &#47;   # wait for f4 to generate the list then press
+       # C-S (or C-Z) to save the list to your cache folder
+       # finally press ESC to exit f4
+
+# passing a cached file to re-use the saved list
+f4 ~&#47;.cache&#47;f4&#47;+
+</code></pre>
+
+<p>The particular name of the cached file depends on the current search path as explained in note 1 of section <a href="keyboard-actions.html">Keyboard actions</a>.
+<code>C-Z</code> saves the file overwriting an existing list file, if any.
+<code>C-S</code> saves the file after making a backup of the existing file.  Backups are kept indefinitely until you purge them from your cache folder.</p>
+
+<p>When you pass f4 a file, f4 disables all advanced controls inside the &#8220;Advanced&#8230;&#8221; expander. This is because they cannot apply to a cached list, unlike when f4 is started with a folder path, and the controls modify the live search performed in the folder to build an on-the-fly list.  Understand that the saved list is a snapshot of a file tree taken at a specific time.  The snapshot reflects the current state of the file tree filtered by all advanced options and fuzzy search terms.</p>
+
+<p>The advantage of searching in a saved list is speed because f4 does not need to scan the disk to build the list of pathnames.  Typing fuzzy search terms to narrow down the list works whether f4 is passed a folder or a file.</p>
+
+<p>Cached files can be read with common text utilities, such as <code>grep</code>, <code>awk</code>, etc. A list file consists of a simplified <a href="https://en.wikipedia.org/wiki/YAML">YAML</a> header followed by an empty line then the compressed list file.</p>
+
+<p>Drawing a parallel with the <code>locate</code> command, working with cached files is similar to what one would do for <code>locate</code>, where locate&#39;s database is updated periodically by running <code>updatedb</code> and searched in with <code>locate</code>.  <code>C-S</code> (<code>C-Z</code>) is f4&#39;s equivalent of updatedb. You can update the database as you perform a search by pressing <code>C-S</code> to keep a history of snapshots for the current search path.</p>
+
+<hr/>
+
+<p><a href="index.html">index</a></p>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Untitled article</title>
+</head>
+<body>
+
+<h1 id="f4">f4</h1>
+
+<p><strong>f4 - fuzzy file finder CLI in a GTK dialog</strong></p>
+
+<p>f4 is powered by <a href="https://github.com/junegunn/fzf">fzf</a>, and
+<a href="https://github.com/puppylinux-woof-CE/gtkdialog">gtkdialog</a>
+built with <a href="http://ftp.gnome.org/pub/GNOME/sources/vte/">libvte</a>.<br/>
+See section <em><a href="installing.html">Installing f4</a></em> for a complete list of dependencies.</p>
+
+<p><a href="https://github.com/step-/f4">f4 home</a><br/>
+<a href="installing.html">installing f4</a><br/>
+<a href="keyboard-actions.html">keyboard actions</a><br/>
+<a href="saving-reusing.html">saving and reusing</a><br/>
+<a href="options-configuration.html">options and configuration</a><br/>
+<a href="translations.html">translations</a><br/>
+<a href="https://github.com/step-/f4/issues">reporting bugs</a>  </p>
+
+<h2 id="Starting%20f4">Starting f4</h2>
+
+<blockquote>
+<p>Usage: <code>[ F4_ENVIRONMENT ...] f4 [ FOLDER | FILE ]</code></p>
+</blockquote>
+
+<p><code>F4_ENVIRONMENT</code> is where you can pass <a href="options-configuration.html">options and configure</a> f4.<br/>
+<code>FOLDER</code> is the path of the folder to search in. Relative paths are supported.<br/>
+<code>FILE</code> is the path of an f4 search results file previously saved with the <a href="saving-reusing.html">save feature</a>.</p>
+
+<h2 id="f4&amp;#39;s%20value">f4&#39;s value</h2>
+
+<p>f4 searches files using <code>find</code>.  In that sense, it is just a front-end for find, the file search command for the console.  So, what&#39;s more in f4?</p>
+
+<ul>
+<li>f4 is a <em>graphical</em> application offering point-and-click search options</li>
+<li>it is a live search&#8211;changing an option changes the search results immediately</li>
+<li>it allows you to fuzzily search find&#39;s results to get that file you can only name approximately</li>
+<li>it starts a program of your own choosing when you activate a search result</li>
+<li>it can save and reuse lists of search results</li>
+</ul>
+
+<h2 id="Searching%20with%20f4">Searching with f4</h2>
+
+<p>In f4 you search in a list of partial results by typing some words, presumably fragments of the file name you are looking for.  The fuzzy finder (fzf) quickly narrows down the list to a few result candidates.  Keep typing until you can eyeball the line with your target file.  Select that line with the <code>ArrowUp</code> and <code>ArrowDown</code> keys¹ then press <code>ENTER</code> to activate the selection.  This opens the file manager² to show the location of the target file.</p>
+
+<p>¹ Use the <code>TAB</code> key to select&#47;unselect multiple targets.<br/>
+² By default ROX-Filer; it can be changed to any other command.  </p>
+
+<p>To summarize, f4 performs a search in the file system using find then a word search in find&#39;s results using fzf.  You don&#39;t need to know find or fzf to perform a search, just type.</p>
+
+<h2 id="Advanced%20searching">Advanced searching</h2>
+
+<p>Do spend a few minutes reading about <a href="https://www.mankier.com/1/fzf#Extended_Search_Mode">fzf&#39;s search rules</a> (<a href="https://github.com/junegunn/fzf#search-syntax">source</a>). They can help narrow down the result list faster and more precisely to your advantage.</p>
+
+<p>You can also reduce and fine-tune find&#39;s results before or while you are typing search terms.  Open f4&#39;s advanced dialog by clicking the &#8220;Advanced&#8230;&#8221; label or pressing <code>F1</code>.  Choose which type of objects to search for, and which paths to keep out.  Settings apply under the search path immediately.</p>
+
+<h2 id="Keyboard%20actions">Keyboard actions</h2>
+
+<p><a href="keyboard-actions.html">keyboard actions</a></p>
+
+<h2 id="Saving%20and%20reusing%20results">Saving and reusing results</h2>
+
+<p><a href="saving-reusing.html">saving and reusing</a></p>
+
+<h2 id="Options%20and%20configuration">Options and configuration</h2>
+
+<p><a href="options-configuration.html">options and configuration</a></p>
+
+<h2 id="Translations">Translations</h2>
+
+<p><a href="translations.html">translations</a></p>
+</body>
+</html>

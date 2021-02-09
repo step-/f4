@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Untitled article</title>
+</head>
+<body>
+
+<h1 id="Installing%20f4">Installing f4</h1>
+
+<h2 id="Dependencies">Dependencies</h2>
+
+<ul>
+<li><a href="https://github.com/junegunn/fzf">fzf</a> <strong>minimum recommended version 0.25.1</strong>;
+if you must use an earlier version, 0.23.1 is recommended</li>
+<li><a href="https://github.com/puppylinux-woof-CE/gtkdialog">gtkdialog</a> built with <a href="http://ftp.gnome.org/pub/GNOME/sources/vte/">libvte</a></li>
+<li><a href="https://www.gnu.org/software/bash/">bash</a></li>
+<li>any <code>find</code> (f4 is tested with <a href="https://www.gnu.org/software/findutils/">findutils</a>&#8217; find)</li>
+<li><a href="https://www.gnu.org/software/coreutils/">GNU coreutils</a>&#39;s <code>cp</code> for <code>C-S</code> (saving with backup); <code>C-Z</code> (saving without backup) does not need <code>cp</code></li>
+<li><a href="https://gitlab.com/procps-ng/procps">procps-ng</a>&#39;s <code>pgrep</code> (busybox&#39;s <code>pgrep</code> is not enough)</li>
+<li><code>date</code>, <code>grep</code>, <code>gzip</code>, <code>sed</code>.</li>
+</ul>
+
+<p>f4 is developed and tested on <a href="http://distro.ibiblio.org/fatdog/web/">Fatdog64 Linux</a>.</p>
+
+<p><strong>Optional programs</strong></p>
+
+<ul>
+<li><a href="https://github.com/sharkdp/bat">bat</a> if installed, bat enhances the help pager</li>
+<li><a href="https://github.com/v1cont/yad">yad</a> used only for debugging. (<a href="https://github.com/step-/yad">yad for GTK-+2</a>)</li>
+</ul>
+
+<h2 id="Fatdog64%20810">Fatdog64 810</h2>
+
+<ul>
+<li>Start the Gslapt package manager applet located in Fatdog64&#39;s Control Panel&#39;s System tab:
+
+<ul>
+<li>update the list of available packages</li>
+<li>install packages fzf and gtkdialog-vte.</li>
+</ul></li>
+<li>Download the <a href="https://github.com/step-/f4/releases/latest">latest version of f4</a>
+
+<ul>
+<li>unpack the archive and run the installer following the included README file.</li>
+</ul></li>
+</ul>
+
+<h2 id="FossaPup64%209.5">FossaPup64 9.5</h2>
+
+<p>The Ubuntu repository provides a very old version of fzf that works with f4 with minor limitations.
+Remember to upgrade fzf to the minimum recommended version or higher as soon as practical.</p>
+
+<ul>
+<li>Start the Puppy Package Manager:
+
+<ul>
+<li>update the database of available packages</li>
+<li>install package fzf from the Ubuntu repository.</li>
+</ul></li>
+<li>Download the <a href="https://github.com/step-/f4/releases/latest">latest version of f4</a>
+
+<ul>
+<li>unpack the archive and run the installer following the included README file.</li>
+</ul></li>
+<li>Run fixmenus from the system menu.</li>
+<li>Run <code>update-icon-caches &#47;usr&#47;share&#47;icons&#47;hicolor</code></li>
+</ul>
+
+<h2 id="DebianDog-Sid%20and%20FossaDog">DebianDog-Sid and FossaDog</h2>
+
+<p>The Debian repository provides a somewhat old version of fzf.
+The Ubuntu repository provides a very old version of fzf.
+Both versions work with f4 with minor limitations.
+Remember to upgrade fzf to the minimum recommended version or higher as soon as practical.</p>
+
+<ul>
+<li>Start Synaptics package manager from the system menu:
+
+<ul>
+<li>reload the list of available packages</li>
+<li>install package fzf</li>
+</ul></li>
+<li>Download the <a href="https://github.com/step-/f4/releases/latest">latest version of f4</a>
+
+<ul>
+<li>unpack the archive and run the installer following the included README file.</li>
+</ul></li>
+<li>For DebianDog-Sid only run <code>update-icon-caches &#47;usr&#47;share&#47;icons&#47;hicolor</code>.</li>
+<li>FossaDog places the menu entry for f4 in the <em>Other</em> category.
+
+<ul>
+<li>For DebianDog-Sid edit file <code>&#47;usr&#47;share&#47;applications&#47;f4.desktop</code> and change the category to <code>Category=Utility;</code>.</li>
+</ul></li>
+<li>Create the new file <code>&#47;etc&#47;profile.d&#47;f4.sh</code> with the following content:</li>
+</ul>
+
+<pre><code class="language-sh">export F4_FILE_OPEN_COMMAND="pcmanfm \"\$F4_SEARCH_IN&#47;\$1\""
+</code></pre>
+
+<p>This file will be sourced automatically for all shells after the next reboot.  Until then f4 will default to ROX-Filer for opening files with the Control-o key.</p>
+
+<hr/>
+
+<p><a href="index.html">index</a></p>
+</body>
+</html>

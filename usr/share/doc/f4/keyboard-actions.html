@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Untitled article</title>
+</head>
+<body>
+
+<h1 id="Keyboard%20actions">Keyboard actions</h1>
+
+<p>Below the symbol <code>C-x</code> represents simultaneously pressing the <code>control</code> and <code>x</code> keys then releasing the keys.
+<code>S-</code> represents the <code>shift</code> key.</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">Keys</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td style="text-align: left"><code>F10</code></td>
+<td style="text-align: left">open the hotkey menu below the main window</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-H</code>¹</td>
+<td style="text-align: left">page the help file</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>Up</code>, <code>Down</code></td>
+<td style="text-align: left">change which line is current</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>PageUp</code>, <code>PageDown</code></td>
+<td style="text-align: left">scroll the list</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>TAB</code></td>
+<td style="text-align: left">mark the current line selected</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>S-TAB</code></td>
+<td style="text-align: left">unmark the current line</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>ENTER</code></td>
+<td style="text-align: left">locate the files in the selected lines &#8211;the current line if no line was selected; see <code>F4_FILE_LOCATE_COMMAND</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-O</code>¹</td>
+<td style="text-align: left">open the files in the selected lines; see <code>F4_FILE_OPEN_COMMAND</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-L</code></td>
+<td style="text-align: left">page through the error logs for <code>ENTER</code>, <code>C-O</code> and the <code>find</code> command</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-R</code></td>
+<td style="text-align: left">replay <code>find</code> and refresh the search results &#8211;the current query is still in effect</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-S</code>²</td>
+<td style="text-align: left">save the current list state to a file in your cache folder</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-Z</code>²</td>
+<td style="text-align: left">like <code>C-S</code> but without backup</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>ESC</code></td>
+<td style="text-align: left">quit f4 &#8211;<code>C-C</code>, <code>C-G</code>, <code>C-Q</code> also quit; see <code>F4_HOTKEY_ESC</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>ESC</code>³</td>
+<td style="text-align: left">close the current GUI sub-dialog window</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>F1</code>º</td>
+<td style="text-align: left">reveal and focus the Help button; with repeated presses focus switches cyclically between the button and the search prompt</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>F2</code>º</td>
+<td style="text-align: left">open the folder browser</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>F3</code>º</td>
+<td style="text-align: left">edit keep-out paths</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>F4</code></td>
+<td style="text-align: left">open the cache folder if it exists&#8211;keep quiet if it does not</td>
+</tr>
+</tbody>
+</table>
+
+<p>¹ Inside the pager:</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">Keys</th>
+<th style="text-align: left">Action</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td style="text-align: left"><code>ENTER</code></td>
+<td style="text-align: left">close and return to the search list</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>Up</code>, <code>Down</code></td>
+<td style="text-align: left">next&#47;previous file</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>S-Up</code>, <code>S-Down</code></td>
+<td style="text-align: left">scroll one line</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>PageUp</code>, <code>PageDown</code></td>
+<td style="text-align: left">scroll one page</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>C-W</code></td>
+<td style="text-align: left">toggle line wrapping</td>
+</tr>
+</tbody>
+</table>
+
+<p>² <code>$F4_CACHE_PATH&#47;+filename</code>.  <code>+filename</code> is obtained from the current search path by keeping all alphanumerics, dash, underscore and dot characters and replacing all other characters with <code>+</code>, e.g. <code>&#47;root&#47;Documents</code> becomes <code>+root+Documents</code>. If you press <code>C-S</code> an existing file will be backed up and a new file will be created in its place.  If you press <code>C-Z</code> an existing file will be overwritten.  </p>
+
+<p>³ This key acts on GUI dialogs.  It cannot be redefined.  Note that you should use <code>ENTER</code> to close the <code>C-H</code> help preview in the terminal because using <code>ESC</code> would quit f4.</p>
+
+<p>º Read about redefining hotkeys in section <code>F4_HOTKEY_ESC</code> of <a href="options-configuration.html">options and configuration</a>.  </p>
+
+<hr/>
+
+<p><a href="index.html">index</a></p>
+</body>
+</html>

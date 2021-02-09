@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=f4
+Icon=f4
+Comment=fuzzy file finder
+Exec=f4
+Terminal=false
+Type=Application
+Categories=X-FilesystemFind;
+GenericName=fuzzy file finder

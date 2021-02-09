@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Untitled article</title>
+</head>
+<body>
+
+<h1 id="Options%20and%20configuration">Options and configuration</h1>
+
+<h2 id="Read-only%20environment%20variables">Read-only environment variables</h2>
+
+<p>When f4 runs a user-defined command it exports the following variables to the command&#39;s environment:</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">Name</th>
+<th style="text-align: left">Description</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td style="text-align: left"><code>F4_SEARCH_IN</code></td>
+<td style="text-align: left">current search path</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>F4_VTE</code></td>
+<td style="text-align: left">process id of the embedded terminal</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="Changeable%20environment%20variables">Changeable environment variables</h2>
+
+<p>f4 has no configuration file of its own.  You can configure f4 by setting environment variables.
+To persistent your configuration export and set <code>F4_</code>-prefixed variables in your shell profile file.
+For one-off use set variables on the command line, i.e. <code>env F4_FONT_NAME="Bold Italic 12" f4</code></p>
+
+<p>Here is the list of environment variables and their default values.
+Variables that affect terminal colors are listed in a separate section.</p>
+
+<p><strong>Security note</strong> &#8211; f4 does not run in a sandbox and these variables are no exception. <em>Setting wrong or malicious values for these variables could harm your data and software.</em>  The author of f4 takes no responsibility for any damage.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_SEARCH_PATH="."  # the current folder
+</code></pre>
+
+<p><code>F4_SEARCH_PATH</code> can also be changed in the GUI by pressing the folder icon.
+The read-only counterpart of this variable is <code>F4_SEARCH_IN</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FONT_NAME="Monospace 11"
+</code></pre>
+
+<p><code>F4_FONT_NAME</code> affects the font displayed in the terminal.
+The value is a <a href="https://pango.gnome.org">Pango</a> font description string ending with the desired font size.  Obtain a list of font descriptions for your system by running <code>pango-list</code> in a terminal.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FOLLOW_SYMLINKS="true"
+</code></pre>
+
+<p><code>F4_FOLLOW_SYMLINKS</code> can be enabled&#47;disabled via the GUI by ticking its associated checkbox.
+<code>F4_FOLLOW_SYMLINKS</code> determines which results to print when a chain of symbolic links is traversed. If this option is true then the result is the initial link and the ultimate target otherwise the result is just the initial link.  This option corresponds to find command&#39;s own options <code>-L</code> (true) and <code>-P</code> (false).  See also <a href="https://www.mankier.com/1/find#Options">find</a>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_EXPANDER="false"
+</code></pre>
+
+<p><code>F4_EXPANDER</code> represents the initial state (open&#47;close) of GUI expander labelled &#8220;Advanced&#8230;&#8221;.
+If &#8220;true&#8221; then f4 starts with the Advanced dialog expanded.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FZF="fzf"
+</code></pre>
+
+<p>The <code>fzf</code> command.  Useful if you need to use a particular version of fzf.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_GTKDIALOG="gtkdialog"
+</code></pre>
+
+<p>The <code>gtkdialog</code> command.  Useful if you need to use a particular version of gtkdialog.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_BAT="bat"
+</code></pre>
+
+<p>The <code>bat</code> command.  If <code>bat</code> is installed it will be used to colorize help pages invoked with <code>C-H</code>.
+To default to monochrome colors unset <code>F4_BAT</code>.
+See also <code>F4_THEME_BAT</code> in the <em>Colors</em> section.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_HOTKEY_ESC="0:F1:0xff1b"
+</code></pre>
+
+<p><code>F4_HOTKEY_ESC</code> is the key that quits f4&#39;s main window.  This key takes precedence over all other keys.
+It is intercepted at the GUI level before the terminal has a chance to see it.  If you need to use <code>ESC</code> in the terminal for any reason, you should redefine <code>F4_HOTKEY_ESC</code>.</p>
+
+<p><strong>Redefining hotkeys</strong></p>
+
+<p>To redefine any <code>F4_HOTKEY_?</code> hotkey change its value according to the following format: <code>&#60;modifier&#62;:&#60;label&#62;:&#60;accelerator&#62;</code>.</p>
+
+<p><code>&#60;modifier&#62;</code> is 1 for the <code>Shift</code> key, 2 for <code>Alt</code>¹, and 4 for <code>Control</code>.
+<code>&#60;label&#62;</code> is shown in the GUI.<br/>
+<code>&#60;accelerator&#62;</code> is the hexadecimal representation of the keycode.  </p>
+
+<p>For example, <code>F4_HOTKEY_ESC="1:F8:0xffc5"</code> redefines <code>Shift+F8</code> as the key to quit f4&#39;s main window.</p>
+
+<p>Advanced tip:
+If your GTK configuration sets option <code>gtk-can-change-accels = 1</code> then you will be able to change hotkeys on-the-fly when you press <code>F10</code> to display f4&#39;s menu.</p>
+
+<p>¹ <code>Alt</code> does not work on GTK-+2 builds.  </p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_HOTKEY_F1="0:F1:0xffbe"
+</code></pre>
+
+<p><code>F4_HOTKEY_F1</code> defines the key that switches input focus between the GUI expander and the search prompt in the terminal.  When the expander is closed, pressing <code>F1</code> opens it and switches focus to the stylized Help button. Then you can press <code>ENTER</code> to get help or press the <code>TAB</code> key¹ repeatedly to jump through other advanced controls.  When you press <code>F1</code> repeatedly input focus switches cyclically between the Help button and the search prompt.</p>
+
+<p>¹ You can also use the arrow keys and all other standard keyboard navigation shortcuts. However, the left and right arrow keys are bound inside the Help field so you need to press the <code>TAB</code> key to break out.</p>
+
+<p>See also <em>Redefining hotkeys</em> under <code>F4_HOTKEY_ESC</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_HOTKEY_F2="0:F2:0xffbf"
+</code></pre>
+
+<p><code>F4_HOTKEY_F2</code> opens the folder browser dialog.</p>
+
+<p>See also <em>Redefining hotkeys</em> under <code>F4_HOTKEY_ESC</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_HOTKEY_F3="0:F3:0xffc0"
+</code></pre>
+
+<p><code>F4_HOTKEY_F3</code> opens the dialog to edit keep-out paths.</p>
+
+<p>See also <em>Redefining hotkeys</em> under <code>F4_HOTKEY_ESC</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_HOTKEY_F4="0:F3:0xffc1"
+</code></pre>
+
+<p><code>F4_HOTKEY_F4</code> opens the cache folder <code>F4_CACHE_PATH</code> if it exists.</p>
+
+<p>See also <em>Redefining hotkeys</em> under <code>F4_HOTKEY_ESC</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_BROWSER="$BROWSER"
+</code></pre>
+
+<p><code>F4_BROWSER</code> is the command used for viewing the local help HTML file. The default is the value of variable <code>$BROWSER</code> if set, otherwise <code>xdg-open</code>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_CACHE_PATH="$XDG_CACHE_HOME&#47;f4"  # otherwise $HOME&#47;.cache&#47;f4
+</code></pre>
+
+<p><code>F4_CACHE_PATH</code> is the folder in which the <code>C-S</code> and <code>C-Z</code> actions <a href="saving-and-reusing.md">save the current result list</a>.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_CASE_SENSITIVE=""
+</code></pre>
+
+<p>By default f4&#39;s searches and keep-out patterns (<code>F4_KEEP_OUT_PATHS</code>) are not case-sensitive.
+if <code>F4_CASE_SENSITIVE</code> is set then f4 will use case-sensitive search terms and keep-out path patterns.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_KEEP_OUT_PATHS="&#39;&#47;aufs&#47;*&#39; &#39;&#47;dev&#47;*&#39; &#39;&#47;lib&#47;*&#39; &#39;&#47;lib64&#47;*&#39; &#39;&#47;proc&#47;*&#39; &#39;&#47;sys&#47;*&#39; &#39;&#47;tmp&#47;*&#39;"
+</code></pre>
+
+<p><code>F4_KEEP_OUT_PATHS</code> can be edited in the GUI.
+The value is a list of space-separated patterns.
+A pattern in <em>single quotes</em> is a <a href="https://en.wikipedia.org/wiki/Glob_(programming)#Syntax">shell-style wild card pattern</a> to match against the <em>full paths</em> of folders eligible for searching. When the pattern matches the path of a folder f4 will not visit this folder.</p>
+
+<ul>
+<li>Dot <code>.</code> and slash <code>&#47;</code> match themselves.</li>
+<li>Start a pattern with <code>.&#47;</code> to match under the current search path.</li>
+<li>Start a pattern with <code>*&#47;</code> to match anywhere in the search tree.</li>
+<li>End a pattern with <code>&#47;*</code> to match the content of a folder but not the folder itself.</li>
+<li>Start the list with <code>#</code> to disable its use therefore making f4 visit all encountered matches.</li>
+<li>By default matching is case-insensitive unless <code>F4_CASE_SENSITIVE</code> is set.</li>
+</ul>
+
+<hr/>
+
+<pre><code class="language-sh">F4_KEEP_OUT_FILE_SYSTEMS="devfs devtmpfs proc sysfs"
+</code></pre>
+
+<p><code>F4_KEEP_OUT_FILE_SYSTEMS</code> can be edited in the GUI.
+The value is a space-separated list of names of file system types to match against the available file systems¹.
+f4 will not visit folders and files located in these file systems.
+The default value reflects special file systems that commonly do not contain user&#39;s files and can be ignored in order to speed up searching.</p>
+
+<p>¹ Linux file <code>&#47;sys&#47;filesystems</code> lists the available file system types.  </p>
+
+<p><strong>Advanced</strong> &#8211; One can spot a special case for operating systems inspired by Puppy Linux&#39;s layered file system¹.
+These use file system layers to load SFS files and the save file.  Files loaded this way get multiple entry points, which can result in duplicated search hits.  Excluding layered file system may reduce the amount of files that f4 needs to examine.</p>
+
+<p>Note that in these systems the root file system <code>&#47;</code> is the mount point of a layered file system, so if layered file systems are kept out, f4 will not list files and folders under <code>&#47;</code>.  Here is an incomplete list of layered file system types: <code>aufs</code> <code>fuse.luufs</code> <code>overlay</code> <code>squashfs</code> <code>unionfs</code> <code>fuse.unionfs</code>.  Which type is used to mount <code>&#47;</code> depends on your variant, with <code>aufs</code> and <code>overlay</code> the most common ones.</p>
+
+<p>¹ Puppy Linux, Fatdog64 Linux, DogLinux&#47;DebianDog and others.</p>
+
+<h3 id="Executing%20commands">Executing commands</h3>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FILE_LOCATE_COMMAND="rox -s \"\$F4_SEARCH_IN&#47;\$1\""
+</code></pre>
+
+<p>f4 runs the <em>locate command</em> <code>F4_FILE_LOCATE_COMMAND</code> when you press the <code>ENTER</code> key.  The command you specify will be wrapped in its own bash script in which <code>$F4_SEARCH_IN&#47;$1</code> is the full path of the selected file.</p>
+
+<p>When multiple files are selected a new command instance runs for each file.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FILE_OPEN_COMMAND="rox \"\$F4_SEARCH_IN&#47;\$1\""
+</code></pre>
+
+<p>f4 runs <code>F4_FILE_OPEN_COMMAND</code> when you press key <code>C-O</code>, Ctrl+O.  The command you specify will be wrapped in its own bash script in which <code>$F4_SEARCH_IN&#47;$1</code> is the full path of the selected file.</p>
+
+<p>When multiple files are selected a new command instance runs for each file.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_FOLDER_OPEN_COMMAND="xdg-open"
+</code></pre>
+
+<p>You can change this command keeping in mind that is it used stricly to open folders.</p>
+
+<hr/>
+
+<pre><code class="language-sh">F4_DEBUG=""
+</code></pre>
+
+<p><code>F4_DEBUG</code> is intended for support and development use.</p>
+
+<h3 id="Colors">Colors</h3>
+
+<pre><code class="language-sh">### f4&#39;s default dark color theme
+#            bg_color fg_color cursor_bg_color cursor_shape
+F4_THEME_TERM="#3a3a3a #d0d0d0 #d0d0d0 0"
+F4_THEME_FZF="bg:235,bg+:234,fg:252,fg+:252,info:143,border:240,spinner:108,hl:65,header:143,pointer:160,marker:231,prompt:143,hl+:108,preview-bg:235,preview-fg:252"
+F4_THEME_BAT="Coldark-Dark"
+</code></pre>
+
+<p>These variables define the overall color theme:</p>
+
+<p><code>F4_THEME_TERM</code> - affects the default terminal colors.  Specify colors as X11 color values, that is, X11 properties.</p>
+
+<p><code>F4_THEME_FZF</code> - affects fzf&#39;s colors and paints over the default terminal.  Specify colors as ANSI 256-color codes.</p>
+
+<p><code>F4_THEME_BAT</code> - affects colors of the help pager and matters only when <code>FZF_BAT</code> is defined.</p>
+
+<p>See also some stunning palettes at <a href="https://github.com/junegunn/fzf/wiki/Color-schemes">fzf wiki&#39;s color page</a>.  The meaning of each field is described in <a href="https://www.mankier.com/1/fzf#Options-Display">the manual</a>.</p>
+
+<p><strong>X11 and ANSI 256 equivalent color values</strong></p>
+
+<p><a href="https://jonasjacek.github.io/colors/">cheatsheet</a>.</p>
+
+<p><strong>256 color table</strong></p>
+
+<p><img src="256-color-table.png" alt="256 color table" /></p>
+
+<p><a href="https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit">source with full explanation</a></p>
+
+<hr/>
+
+<p><a href="index.html">index</a></p>
+</body>
+</html>

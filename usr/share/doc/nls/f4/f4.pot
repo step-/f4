@@ -1,0 +1,179 @@
+# f4 1.0.0.
+# Copyright (C) 2020-2021, step
+# This file is distributed under the same license as the f4 package.
+# step, https://github.com/step-/
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: f4 1.0.0\n"
+"Report-Msgid-Bugs-To: https:///\n"
+"POT-Creation-Date: 2021-02-08 21:26+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#. i18n_Internal_error
+msgid "Internal error:\n"
+msgstr ""
+
+#. i18n_Help
+msgid "» Help...\n"
+msgstr ""
+
+#. i18n_search_in_tooltip
+msgid "<b><tt>F4_SEARCH_PATH</tt></b>\n"
+msgstr ""
+
+#. i18n_select_folder
+msgid "Select the folder to search in...\n"
+msgstr ""
+
+#. i18n_expander_label
+msgid "Advanced...\n"
+msgstr ""
+
+#. i18n_press_key__fmt
+msgid "press [%s]\n"
+msgstr ""
+
+#. i18n_prompt
+msgid "Find >\n"
+msgstr ""
+
+#. i18n_short_help_printf
+msgid "\${we1}TAB\${we0}=select \${we1}ENTER\${we0}=locate \${we1}C-O\${we0}=open \${we1}ESC\${we0}=quit \${we1}C-H\${we0}=more...\n"
+msgstr ""
+
+#. i18n_re_fp_glob_tooltip
+msgid "<b><tt>F4_KEEP_OUT_PATHS</tt></b>\n"
+msgstr ""
+
+#. i18n_re_fp_glob_desc
+msgid "<tt>F4_KEEP_OUT_PATHS</tt> keep-out paths: a list of space-separated, shell-style wild card patterns. A pattern <span fgcolor='red'>in single quotes</span> matches against the <span fgcolor='red'>full paths</span> of folders not to be searched. Patterns are case-insensitive (configurable). Dot <tt><span fgcolor='red'>.</span></tt> and slash <tt><span fgcolor='red'>/</span></tt> match themselves. Start a pattern with: <tt><span fgcolor='red'>./</span></tt> to match under the search path; <tt><span fgcolor='red'>*/</span></tt> to match anywhere in the search tree. End a pattern with <tt><span fgcolor='red'>/*</span></tt> to match the content of a folder but not the folder itself. Start the list with <tt><span fgcolor='red'>#</span></tt> to disable its use.\n"
+msgstr ""
+
+#. i18n_re_fs_spec_tooltip
+msgid "<b><tt>F4_KEEP_OUT_FILE_SYSTEMS</tt></b>\n"
+msgstr ""
+
+#. i18n_re_fs_spec_desc
+msgid "<tt>F4_KEEP_OUT_FILE_SYSTEMS</tt> keep-out file systems: a list of space-separated names of file system types not to be searched.\n"
+msgstr ""
+
+#. i18n_re_fp_glob_invalid
+msgid "Invalid keep-out paths (F4_KEEP_OUT_PATHS):\n"
+msgstr ""
+
+#. i18n_re_fs_spec_invalid
+msgid "Invalid keep-out file systems (F4_KEEP_OUT_FILE_SYSTEMS):\n"
+msgstr ""
+
+#. i18n_file_locate_command_invalid
+msgid "Invalid file locate command (F4_FILE_LOCATE_COMMAND):\n"
+msgstr ""
+
+#. i18n_file_open_command_invalid
+msgid "Invalid file open command (F4_FILE_OPEN_COMMAND):\n"
+msgstr ""
+
+#. i18n_gui_main_title
+msgid "File search\n"
+msgstr ""
+
+#. i18n_filters_apply_immediately
+msgid "<b>Filters apply under the search path immediately.</b>\n"
+msgstr ""
+
+#. i18n_List
+msgid "List\n"
+msgstr ""
+
+#. i18n_Files
+msgid "Files\n"
+msgstr ""
+
+#. i18n_Folders
+msgid "Folders\n"
+msgstr ""
+
+#. i18n_Links
+msgid "Links\n"
+msgstr ""
+
+#. i18n_symbolic_links
+msgid "<b>symbolic links</b>\n"
+msgstr ""
+
+#. i18n_Follow_links
+msgid "Follow links\n"
+msgstr ""
+
+#. i18n_follow_links_tooltip
+msgid "<b>list and also examine the target of a link</b>\n"
+msgstr ""
+
+#. i18n_Examine_also
+msgid "Examine also\n"
+msgstr ""
+
+#. i18n_Hidden
+msgid "Hidden\n"
+msgstr ""
+
+#. i18n_Hidden_folders
+msgid "Hidden folders\n"
+msgstr ""
+
+#. i18n_Hidden_leaves
+msgid "Hidden leaves\n"
+msgstr ""
+
+#. i18n_edit_re_fp_glob_tooltip
+msgid "Edit paths to keep out...\n"
+msgstr ""
+
+#. i18n_edit_re_fs_spec_tooltip
+msgid "<b>Edit file systems to keep out...</b>\n"
+msgstr ""
+
+#. i18n_gui_re_fp_glob_title
+msgid "edit value\n"
+msgstr ""
+
+#. i18n_gui_re_fp_glob_entry
+msgid "Edit path patterns:\n"
+msgstr ""
+
+#. i18n_gui_re_fs_spec_title
+msgid "edit value\n"
+msgstr ""
+
+#. i18n_gui_re_fs_spec_entry
+msgid "Edit file system types:\n"
+msgstr ""
+
+#. i18n_error_log_pager_prompt
+msgid "Choose an error log below >\n"
+msgstr ""
+
+#. i18n_help_file_pager_prompt
+msgid "Choose a help section below >\n"
+msgstr ""
+
+#. i18n_pager_short_help_printf
+msgid "\${we1}Down\${we0}=next \${we1}ENTER\${we0}=close \${we1}C-W\${we0}=wrap \${we1}S-Up\${we0} \${we1}S-Down\${we0} \${we1}PageUp\${we0} \${we1}PageDown\${we0}=scroll\n"
+msgstr ""
+
+#. i18n_Quit
+msgid "Quit\n"
+msgstr ""
+
+#. i18n_Open_cache_folder
+msgid "Open cache folder\n"
+msgstr ""

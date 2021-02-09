@@ -1,111 +1,877 @@
 #!/bin/sh
+# ^^^^^^^ the main script targets the POSIX shell; sub-scripts use bash for now
+# vim:noet ts=4 noet:
 
-# f4 - fuzzy file finder for Fatdog64
-# Copyright (C) step, 2020 - https://github.com/step-
-# License: GNU GPL3 or MIT
-# Requires gtkdialog compiled with vte support and fzf https://github.com/junegunn/fzf
+# f4 - fuzzy file finder CLI in a GTK dialog
+Version=1.0.0
+# Copyright (C) step, 2021 - https://github.com/step-/f4
+# License: GNU GPL3 or MIT - https://github.com/step-/f4
+# Dependencies: see usr/share/doc/f4/installing.md
+
+# --- Constants -----------------------------------------------------------{{{1
+
+# Dear user, please don't change these constants in this file.  Instead
+# export and set F4_* variables in your shell profile file (for persistent use)
+# or directly on the command line (one-off use), i.e. env F4_SEARCH_PATH=$HOME f4
+# More F4_* variables are available and described in the local help file,
+# which should be installed as /usr/share/doc/f4/index.md and .html.
 
 # Default search directory
-cd "${1:-.}"
+search_path="${1:-${F4_SEARCH_PATH:-.}}"
+
+## command to locate the selected file in the file manager
+file_locate="${F4_FILE_LOCATE_COMMAND:-rox -s \"\$F4_SEARCH_IN/\$1\"}"
+# and to open it
+file_open="${F4_FILE_OPEN_COMMAND:-rox \"\$F4_SEARCH_IN/\$1\"}"
+# open a folder
+folder_open="${F4_FOLDER_OPEN_COMMAND:-xdg-open}"
+
+## terminal
+font_name="${F4_FONT_NAME:-Monospace 11}" # Sans Bold 10
+# dark theme foreground and background colors, caret color and shape (0=block)
+x="${F4_THEME_TERM:-#3a3a3a #d0d0d0 #d0d0d0 0}"
+bg_color=${x%% *}; x=${x#$bg_color }
+fg_color=${x%% *}; x=${x#$fg_color }
+cursor_bg_color=${x%% *}; x=${x#$cursor_bg_color }
+cursor_shape=$x
+# for dark theme terminal
+fzf_palette="${F4_THEME_FZF:-bg:235,bg+:234,fg:252,fg+:252,info:143,border:240,spinner:108,hl:65,header:143,pointer:160,marker:231,prompt:143,hl+:108,preview-bg:235,preview-fg:252}"
+theme_bat="${F4_THEME_BAT:-Coldark-Dark}"
+
+hotkey_esc="${F4_HOTKEY_ESC:-0:ESC:0xff1b}"
+hotkey_f1="${F4_HOTKEY_F1:-0:F1:0xffbe}"
+hotkey_f2="${F4_HOTKEY_F2:-0:F2:0xffbf}"
+hotkey_f3="${F4_HOTKEY_F3:-0:F3:0xffc0}"
+hotkey_f4="${F4_HOTKEY_F4:-0:F4:0xffc1}"
+
+fzf=${F4_FZF:-fzf}
+
+# --- Early initialization ------------------------------------------------{{{1
 
 export TEXTDOMAIN=fatdog OUTPUT_CHARSET=UTF-8
-. gettext.sh
 
-[ -z $GTKDIALOG ] && GTKDIALOG=gtkdialog
-
-export TMPD=$(mktemp -d -p "${TMPD:-/tmp}" "${0##*/}_XXXXXX")
+SN="${0##*/}" stem=".${0##*/}"
+export TMPD=$(mktemp -d -p "${TMPD:-/tmp}" "${stem}_XXXXXX")
 chmod 700 "$TMPD" || exit 1
-trap "rm -rf \"$TMPD\"/* \"$TMPD\"; exit \$STATUS" HUP INT ALRM TERM 0 USR1 USR2
+trap handler HUP INT ALRM TERM 0 USR1 USR2
+handler() {
+	${F4_DEBUG:+yad --text="f4 exit trap" --posx=100 --posy=100}
+	rm -rf "$TMPD"/* "$TMPD"
+	exit $STATUS
+}
 
-# fzf supports bash and zsh
-argv="
-	argv0=\"/bin/bash\"
-	argv1=\"$TMPD/script\"
-"
+# word emphasis - ANSI 256 color codes
+fg=${fzf_palette##*header:} fg=${fg%%,*}
+bg=${fzf_palette##*bg:}     bg=${bg%%,*}
+we1="\033[38;5;${bg};48;5;${fg}m" we0="\033[0m"
 
-# show files in their folder
-show_file="rox -s"
+[ "$F4_CASE_SENSITIVE" ] && find_path="path" fzf_case="+i" || unset find_path fzf_case
+cache_path=${F4_CACHE_PATH:-"${XDG_CACHE_HOME:-${XDG_HOME:-$HOME}/.cache}/$SN"}
+mkdir -p "$cache_path"
+# window identity
+sign=" - $SN $Version" app_icon="icon-name=\"f4\""
 
-pwd > "$TMPD"/cwd
+# --- Translation table i18n ----------------------------------------------{{{1
 
-echo > "$TMPD"/script '
-echo pkill -P $$ -HUP fzf > "$TMPD"/refresh-vte
-chmod +x "$TMPD"/refresh-vte
-while :; do
-	read cwd < "$TMPD"/cwd
-	cd "${cwd:-?}"
-	header=$(printf "\033[7m%s\033[0m" "$cwd")
-	fzf -m --print0 --header="$header" | xargs -0 -L1 -r '"$show_file"'
-	case ${PIPESTATUS[0]} in
-		129) : HUP; continue ;;
-		130) : ESC/^C; break ;;
-		*  ) exit ${PIPESTATUS[0]} ;;
-	esac
-	break
-done
+# Notes for translators
+# ---------------------
+# To create a pot file for this script use xgettext.sh[1] instead of xgettext.
+# xgettext.sh augments xgettext with the ability to extract MSGIDs from calls
+# to 'gettext -es'.
+# [1] https://github.com/step-/i18n-table
+#
+# A. Never use \n **inside** your MSGSTR. For yad and gtkdialog replace \n with \r.
+# B. However, always **end** your MSGSTR with \n.
+# C. Replace trailing spaces (U+0020) with no-break spaces (U+00A0).
+
+i18n_table() {
+	{
+read i18n_Internal_error
+read i18n_Help
+read i18n_search_in_tooltip
+read i18n_select_folder
+read i18n_expander_label
+read i18n_press_key__fmt
+read i18n_prompt
+read i18n_short_help_printf
+read i18n_re_fp_glob_tooltip
+read i18n_re_fp_glob_desc
+read i18n_re_fs_spec_tooltip
+read i18n_re_fs_spec_desc
+read i18n_re_fp_glob_invalid
+read i18n_re_fs_spec_invalid
+read i18n_file_locate_command_invalid
+read i18n_file_open_command_invalid
+read i18n_gui_main_title
+read i18n_filters_apply_immediately
+read i18n_List
+read i18n_Files
+read i18n_Folders
+read i18n_Links
+read i18n_symbolic_links
+read i18n_Follow_links
+read i18n_follow_links_tooltip
+read i18n_Examine_also
+read i18n_Hidden
+read i18n_Hidden_folders
+read i18n_Hidden_leaves
+read i18n_edit_re_fp_glob_tooltip
+read i18n_edit_re_fs_spec_tooltip
+read i18n_gui_re_fp_glob_title
+read i18n_gui_re_fp_glob_entry
+read i18n_gui_re_fs_spec_title
+read i18n_gui_re_fs_spec_entry
+read i18n_error_log_pager_prompt
+read i18n_help_file_pager_prompt
+read i18n_pager_short_help_printf
+read i18n_Quit
+read i18n_Open_cache_folder
+	} << EOF
+$(gettext -es -- \
+"Internal error:\n" \
+"» Help...\n" \
+"<b><tt>F4_SEARCH_PATH</tt></b>\n" \
+"Select the folder to search in...\n" \
+"Advanced...\n" \
+"press [%s]\n" \
+"Find >\n" \
+"\${we1}TAB\${we0}=select \
+\${we1}ENTER\${we0}=locate \
+\${we1}C-O\${we0}=open \
+\${we1}ESC\${we0}=quit \
+\${we1}C-H\${we0}=more...\n" \
+"<b><tt>F4_KEEP_OUT_PATHS</tt></b>\n" \
+"<tt>F4_KEEP_OUT_PATHS</tt> keep-out paths: a list of space-separated, \
+shell-style wild card patterns. \
+A pattern <span fgcolor='red'>in single quotes</span> matches against \
+the <span fgcolor='red'>full paths</span> of folders not to be searched. \
+Patterns are case-insensitive (configurable). \
+Dot <tt><span fgcolor='red'>.</span></tt> and \
+slash <tt><span fgcolor='red'>/</span></tt> match themselves. \
+Start a pattern with: \
+<tt><span fgcolor='red'>./</span></tt> \
+to match under the search path; \
+<tt><span fgcolor='red'>*/</span></tt> \
+to match anywhere in the search tree. \
+End a pattern with \
+<tt><span fgcolor='red'>/*</span></tt> \
+to match the content of a folder but not the folder itself. \
+Start the list with \
+<tt><span fgcolor='red'>#</span></tt> \
+to disable its use.\n" \
+"<b><tt>F4_KEEP_OUT_FILE_SYSTEMS</tt></b>\n" \
+"<tt>F4_KEEP_OUT_FILE_SYSTEMS</tt> keep-out file systems: a list of space-separated \
+names of file system types not to be searched.\n" \
+"Invalid keep-out paths (F4_KEEP_OUT_PATHS):\n" \
+"Invalid keep-out file systems (F4_KEEP_OUT_FILE_SYSTEMS):\n" \
+"Invalid file locate command (F4_FILE_LOCATE_COMMAND):\n" \
+"Invalid file open command (F4_FILE_OPEN_COMMAND):\n" \
+"File search\n" \
+"<b>Filters apply under the search path immediately.</b>\n" \
+"List\n" \
+"Files\n" \
+"Folders\n" \
+"Links\n" \
+"<b>symbolic links</b>\n" \
+"Follow links\n" \
+"<b>list and also examine the target of a link</b>\n" \
+"Examine also\n" \
+"Hidden\n" \
+"Hidden folders\n" \
+"Hidden leaves\n" \
+"Edit paths to keep out...\n" \
+"<b>Edit file systems to keep out...</b>\n" \
+"edit value\n" \
+"Edit path patterns:\n" \
+"edit value\n" \
+"Edit file system types:\n" \
+"Choose an error log below >\n" \
+"Choose a help section below >\n" \
+"\${we1}Down\${we0}=next \
+\${we1}ENTER\${we0}=close \
+\${we1}C-W\${we0}=wrap \
+\${we1}S-Up\${we0} \
+\${we1}S-Down\${we0} \
+\${we1}PageUp\${we0} \
+\${we1}PageDown\${we0}=\
+scroll\n" \
+"Quit\n" \
+"Open cache folder\n" \
+)
+EOF
+}
+
+## Create table
+i18n_table
+
+# --- Search template initialization --------------------------------------{{{1
+
+### find command {{{2
+
+## predicate arguments
+
+# naming conventions:
+#  ft_<name> = (f)ind's (t)raverse; fp_<> = f's (p)rint; fo_<> = f's (o)ption
+# _fp_<name> = file paths; _fs_<> = file systems
+
+# pruned paths (single quoted shell globs)
+fp_glob=${F4_KEEP_OUT_PATHS:-"'/aufs/*' '/dev/*' '/lib/*' '/lib64/*' '/proc/*' '/sys/*' '/tmp/*'"}
+fs_spec=${F4_KEEP_OUT_FILE_SYSTEMS:-"devfs devtmpfs proc sysfs"}
+
+## predicates and expressions
+
+# naming conventions:
+# XX_<predicate_argument>
+# |`--- 'e' = prune/exclude/exclusive; 'i' = print/include/inclusive
+# `---- 'f' = source; 'r' = read
+
+# Each f[ei]_ expression below is saved to an eponymous file and associated
+# with an eponymous gtkdialog checkbox <variable>.  The file's executable mode
+# controls when the file is sourced and the checkbox displays a mark.  A file
+# is sourced when its mode x is set (700).  Inclusive expressions are ticked
+# when mode x is set (700); exclusive expressions when mode x isn't set (600).
+
+# These re_ expressions are associated with eponymous entry widgets.  Input
+# values are read--not sourced--from eponymous files and used to build the
+# expression in each ..._fmt variable.
+re_fp_glob=$fp_glob re_fp_glob_fmt=" -o -${find_path:-ipath} %q -prune"
+re_fs_spec=$fs_spec re_fs_spec_fmt=" -o -fstype %q -prune"
+
+echo > "$TMPD"/re_fp_glob  "$re_fp_glob"
+echo > "$TMPD"/re_fs_spec  "$re_fs_spec"
+echo > "$TMPD"/fe_hidden_d "fe_hidden_d=\"-o -type d -path '*/.*' -prune\""
+echo > "$TMPD"/fe_hidden_a "fe_hidden_a=\"! -name '.*'\""
+# files to be sourced after fe_hidden_a to satisfy $fe_hidden_a
+echo > "$TMPD"/fi_type_f "fi_type_f=\"-o -type f \$fe_hidden_a -print\""
+echo > "$TMPD"/fi_type_d "fi_type_d=\"-o -type d \$fe_hidden_a -print\""
+echo > "$TMPD"/fi_type_l "fi_type_l=\"-o -type l \$fe_hidden_a -print\""
+
+## find command options
+
+printf > "$TMPD"/fo_L "true"
+printf > "$TMPD"/fo_P "false"
+
+## putting it all together: the find command template
+
+# by sourcing files selectively via GUI options the command will change dynamically
+cmd='find $find_options .
+	-mindepth 1 -false
+	$re_fp_glob
+	-o -path '"'*/${stem}_*'"' -prune
+	$fe_hidden_d
+	$re_fs_spec
+	$fi_type_f
+	$fi_type_d
+	$fi_type_l
 '
 
-# -----------------------------------------------------------------------------
+### fzf command options {{{2
 
-fzf_help_url="https://www.mankier.com/1/fzf#Extended_Search_Mode"
-i18n_powered_by=$(gettext "powered by fzf")
-i18n_select_folder=$(gettext "select folder")
-i18n_short_help=$(gettext "type your search; press ENTER to view location; Ctrl+C to quit; TAB to select multiple")
+echo > "$TMPD"/file_locate "$file_locate"
+echo > "$TMPD"/file_open "$file_open"
 
-# background-transparent="true"
-# background-saturation="0.2"
-# background-tint-color="#223"
+# --- Command line --------------------------------------------------------------{{{1
+
+### searching in a cached list file?
+# sets globals search_in, expander_sensitive, "$TMPD"/search_is_file
+set_search_in_et_al() { # $1-search-path; return 0 iff $search_in was set {{{
+	search_in="$1" expander_sensitive="true"
+	: > "$TMPD"/source_is_file
+	local p="$search_in" magic found line start=1
+	local version timestamp cmd=cat query re_fp_glob re_fs_spec
+	if [ -f "$p" ] && read magic < "$p" && [ ${#magic} -le 128 ] && [ f4 = "${magic%%:*}" ]; then
+		while read line; do
+			start=$(($start +1))
+			case $line in
+				"f4: 1" ) version=1 ;; # not used
+				"f4:"* ) return ;; # unknown magic or unsupported file format version
+				"timestamp: "* ) timestamp=${line#*: } ;; # not used
+				"compression: gzip" ) cmd="gzip -cd" ;;
+				"search_in: "* ) found=${line#*: } ;;
+				"query: "* ) query=${line#*: } ;; # not used
+				"re_fp_glob: "* ) re_fp_glob=${line#*: } ;; # not used
+				"re_fs_spec: "* ) re_fs_spec=${line#*: } ;; # not used
+				'' ) break
+			esac
+		done < "$p"
+		if [ "$found" ]; then
+			search_in=$found expander_sensitive="false"
+			echo "tail +$start -- \"$p\" | $cmd" > "$TMPD"/source_is_file
+		fi
+	fi
+} # }}}
+set_search_in_et_al "$search_path"
+
+# --- Sub-scripts ---------------------------------------------------------------{{{1
+
+### Build the core sub-scripts that will run in the VTE terminal widget
+# sub-scripts rely on bash--for now
+
+## run_search.sh is the main loop {{{2
+echo > "$TMPD"/run_search.sh \
+'#!/bin/bash
+if [ DEV = "'"$F4_DEBUG"'" ]; then source "'"$TMPD"/debug-dev'"; fi
+set -f # globbing off
+we0="'"$we0"'" we1="'"$we1"'" prompt="  '"$i18n_prompt"' " fzf='"$fzf"'
+echo "pgrep -g $$ fzf | xargs -r kill -HUP" > "$TMPD"/iterate_search.sh
+while ! [ -s "$TMPD"/pid ]; do sleep 0.1; done; read vte_pid < "$TMPD"/pid
+read source_is_file < "$TMPD"/source_is_file
+tmpd=$TMPD
+unset TMPD GUI_MAIN GUI_re_fp_glob GUI_re_fs_spec       # because exported otherwise
+
+append_error_text() { # $1-varname $2-text {{{
+	local -n varname=$1
+	local text="$2" f="$tmpd"/syntax-check a=( ) b=( ) firstonly=0 s
+	while read s; do
+		if [[ $s == !* ]]; then
+			b+=( "$s" )
+		else
+			b+=( "!$s" )
+			if ((firstonly)); then continue; fi
+			# unclutter shell`s error message
+			firstonly=1
+			s=${s#$tmpd/}
+			s=${s/: eval:/:}
+			s=${s/: * [1-9]:/:}      # language-agnostic line
+			s=${s/: * [1-9][0-9]:/:} # number up to 99
+			s=${s/#run_search.sh: /}
+			s=${s/#file_locate: /}
+			s=${s/#file_open: /}
+			a+=( "  $s" )
+		fi
+	done < "$f"
+	printf "%s\n" "${b[@]}" > "$f"
+	printf -v s "\033[101;97m%s\033[0m\n" "$text" "${a[@]}"
+	varname+=$s
+} #}}}
+
+read_formatted_option() { # $1-varname $2-fmt $3-error-message {{{
+	local -n varname=$1
+	local name="$1" fmt="$2" error_msg="$3"
+	read varname < "$tmpd"/$name
+	varname=${varname##\#*} # the user may insert # to disable this option
+	# sanitize rudimentally {{{
+	varname=${varname//eval}
+	varname=${varname//$\(}
+	varname=${varname//[\`$]}
+	# neat: how to expand "^"<single-quote>$<varname> to ${some_value}$<varname>
+	# [ only_this_name = $name ] && varname=${varname//^\'\''/\'\''$some_value\/} || :
+	# }}}
+	# expect $fmt to be based on %q
+	if eval set -- $varname 2>> "$tmpd"/syntax-check; then
+		if [ "$varname" ]; then printf -v $name "$fmt" "$@"; fi
+	else
+		append_error_text header "$error_msg"
+	fi
+} #}}}
+
+make_syntax_checked_dot_run() { # $1-varname $2-error-message {{{
+	local name="$1" error_msg="$2"
+	if bash -n "$tmpd"/$name 2>> "$tmpd"/syntax-check; then
+		cp "$tmpd"/$name "$tmpd"/$name.run
+	else
+		echo "false" > "$tmpd"/$name.run
+		append_error_text header "$error_msg"
+		append_error_text header "  «$(< "$tmpd"/$name)»"
+	fi
+	chmod +x "$tmpd"/$name.run
+} #}}}
+
+while :; do
+	read cwd < "$tmpd"/search_in
+	: > "$tmpd"/syntax-check
+	status=0 count_fi=0 header=""
+
+	### Build the find command
+	## its options
+	find_options=
+	read -n 4 p < "$tmpd"/fo_L; [ true = "$p" ] && find_options+=" -L" || :
+	read -n 4 p < "$tmpd"/fo_P; [ true = "$p" ] && find_options+=" -P" || :
+
+	## source expressions
+	set +f
+	for p in "$tmpd"/f[ei]_*; do
+		set -f
+		v=${p##*/}; unset $v
+		if [ -x "$p" ]; then
+			if [[ $v == fi* ]]; then : $((++count_fi)); fi
+			if ! source "$p" 2>> "$tmpd"/syntax-check; then
+				append_error_text header "'"$i18n_Internal_error"'"
+			fi
+		fi
+	done
+
+	## sanitize, syntax check and wrap user`s text input
+	unset re_fp_glob re_fs_spec
+	read_formatted_option re_fp_glob "'"$re_fp_glob_fmt"'" "'"$i18n_re_fp_glob_invalid"'"
+	read_formatted_option re_fs_spec "'"$re_fs_spec_fmt"'" "'"$i18n_re_fs_spec_invalid"'"
+
+	make_syntax_checked_dot_run file_locate "'"$i18n_file_locate_command_invalid"'"
+	make_syntax_checked_dot_run file_open "'"$i18n_file_open_command_invalid"'"
+
+	## expand cmd template
+	if [ "$header" ]; then # previous errors
+		cmd="false"
+	else
+		if ((count_fi)); then
+			cmd="'"$cmd"'"
+		else # file, folder and link checkboxes not ticked
+			cmd="true"
+		fi
+		printf -v x "%b" "'"$i18n_short_help_printf"'"
+		printf -v header "\033[7m%s\033[0m\n%s" "$cwd" "$x"
+	fi
+
+	### set up the data source that goes into fzf
+	printf -v source " %s" \
+		"exec 2>> \"$tmpd\"/run_source.err;" \
+		"set -e;" \
+		"printf \"\\n----\\n\" >&2;" \
+		"${source_is_file:-"cd \"$cwd\";" command $cmd "| cut -b3-"}"
+	echo $source > "$tmpd"/run_source
+
+	### set up environment
+	export F4_SEARCH_IN=$cwd
+	export F4_VTE=$vte_pid
+
+	'"${F4_DEBUG:+env > \"\$tmpd\"/env}"'
+	'"${F4_DEBUG:+printf \"\\n----\\n%s\\n%s\\n\" \"\$cmd\" >> \"\$tmpd\"/run_source.log}"'
+
+	### run the search
+	sh "$tmpd"/run_source |
+		$fzf --color "'"$fzf_palette"'" -m --reverse '"$fzf_case"' \
+			--prompt="$prompt" --info=inline --header="$header" \
+			--bind="ctrl-h:execute(exec \"$tmpd\"/page_help.sh)" \
+			--bind "ctrl-l:execute(exec \"$tmpd\"/page_errs.sh)" \
+			--bind "enter:execute-silent(exec \"$tmpd\"/run_command.sh file_locate {+f})" \
+			--bind "ctrl-o:execute-silent(exec \"$tmpd\"/run_command.sh file_open {+f})" \
+			--bind "ctrl-r:reload(exec \"$tmpd\"/run_source)" \
+			--bind "ctrl-s:select-all+execute-silent(exec \"$tmpd\"/save_list.sh {+f} {q} backup)+deselect-all" \
+			--bind "ctrl-z:select-all+execute-silent(exec \"$tmpd\"/save_list.sh {+f} {q} \"\")+deselect-all" \
+		&
+	wait $! 2>/dev/null
+	status=$?
+
+	### handle search result, GUI option change or cancellation
+	case $status in
+		129) : HUP; continue ;;         # option changed
+		130) : ^C/^G/^Q; break ;;       # f4 cancelled
+		*  ) : fzf $status; break ;;    # catch all
+	esac
+done
+
+exit $status
+'
+
+## run_command.sh is a wrapper for F4_FILE_{LOCATE,OPEN}_COMMAND {{{2
+# it runs as bash per user documentation in options-configuration.md
+echo > "$TMPD"/run_command.sh \
+'#!/bin/bash
+cmdf=$1 listf=$2 tmpd="'"$TMPD"'"
+set -e
+shift 2
+exec 2>> "$tmpd/$cmdf".err
+while IFS= read -r p; do
+	printf "\n----\n" >&2
+	nohup "$tmpd/$cmdf".run "$p" &
+done < "$listf"
+'
+
+## folder_browser.sh feeds <variable>F4_SEARCH_IN</variable> {{{2
+echo > "$TMPD"/folder_browser.sh \
+'#!/bin/sh
+search_in=$1 tmpd="'"$TMPD"'"
+set -e
+shift 1
+# because fileselect: is synchronous we do not need to worry about killing
+# gtkdialog when save:entry is not performed, i.e. the user pressed Esc
+'${F4_GTKDIALOG:-gtkdialog}' -s << EOF &
+<window title="'"$sign"'" width-request="1" height-request="1" resizable="false" '"$app_icon"' window-position="1">
+	<comboboxtext fs-action="folder" fs-folder="$search_in" fs-filters-mime="inode/directory" fs-title="'"$i18n_select_folder$sign"'">
+		<variable>entry</variable>
+		<input file>'"$TMPD"/search_in'</input>
+		<output file>'"$TMPD"/search_in'</output>
+		'"${REMARK# sleep for fossapup64 9.5}"'
+		<action signal="changed">command:sleep 0.3</action>
+		<action signal="changed">save:entry</action>
+	</comboboxtext>
+	<variable>GUI_folder_browser</variable>
+	<action signal="focus-in-event">hide:GUI_folder_browser</action>
+	<action signal="focus-in-event">fileselect:entry</action>
+	<action signal="focus-in-event">exit:</action>
+</window>
+EOF
+'
+
+## page_files.sh is a simple, fzf-based file pager {{{2
+# note that the GTK-+2 VTE terminal does not pass alt to fzf`s preview
+echo > "$TMPD"/page_files.sh \
+'#!/bin/bash
+follow=${1:+:$1} prompt=$2 format=$3 tmpd="'"$TMPD"'" fzf='"$fzf"'
+if ! $fzf --preview-window="$follow" --version > /dev/null 2>&1; then
+	unset follow # fzf < 0.24.4
+fi
+set -e
+shift 3
+# must not redirect stderr!
+printf -v header "%b" "$format"
+printf "%s\n" "$@" > "$0".in
+exec $fzf --color "'"$fzf_palette"'" --reverse --cycle \
+	--preview="exec \"$tmpd\"/preview.sh {}" \
+	--preview-window="down:85%:wrap$follow" \
+	--prompt="  $prompt " --info=inline --header="$header" \
+	--bind "pgup:preview-page-up" --bind "pgdn:preview-page-down" \
+	--bind "ctrl-w:toggle-preview-wrap" \
+	< "$0".in > /dev/null
+'
+
+## preview.sh for fzf --preview {{{2
+echo > "$TMPD"/preview.sh \
+'#!/bin/sh
+file=$1 tmpd="'"$TMPD"'" theme="'"$theme_bat"'" bat="'"${F4_BAT-bat}"'" # not :-
+set -e
+shift 1
+exec 2> "$0".err
+command -v "$bat" > /dev/null &&
+	exec $bat --theme "$theme" -fpp "$file" || exec cat "$file"
+'
+
+## page_help.sh pages through the help markdown files {{{2
+echo > "$TMPD"/page_help.sh \
+'#!/bin/sh
+tmpd="'"$TMPD"'" we0="'"$we0"'" we1="'"$we1"'"
+set -e
+# must not redirect stderr!
+cd "$("$tmpd"/get_help_path.sh)"
+set --
+# pull index upfront
+for p in *.md; do
+	case $p in index.* ) index=$p ;; * ) set -- "$@" "$p" ;; esac
+done
+if [ "$index" ]; then set -- "$index" "$@"; fi
+exec "$tmpd"/page_files.sh "" "'"$i18n_help_file_pager_prompt"'" "'"$i18n_pager_short_help_printf"'" "$@"
+'
+
+## page_errs.sh pages *.err files {{{2
+echo > "$TMPD"/page_errs.sh \
+'#!/bin/sh
+tmpd="'"$TMPD"'" we0="'"$we0"'" we1="'"$we1"'"
+set -e
+# must not redirect stderr!
+cd "$tmpd"
+exec "$tmpd"/page_files.sh follow "'"$i18n_error_log_pager_prompt"'" "'"$i18n_pager_short_help_printf"'" *.err
+'
+
+## get_help_path.sh prints the help directory path {{{2
+echo > "$TMPD"/get_help_path.sh \
+'#!/bin/sh
+exec realpath "$(dirname "$(realpath "'"$0"'")")"/../share/doc/'"$SN"' 2> "$0".err
+'
+
+## save_list.sh for ctrl-s/ctrl-z bindings {{{2
+echo > "$TMPD"/save_list.sh \
+'#!/bin/sh
+listf=$1 query=$2 do_backup=$3
+tmpd="'"$TMPD"'" p="'"$cache_path"'"
+set -e
+shift $#
+exec 2> "$0".err
+read re_fp_glob < "$tmpd"/re_fp_glob
+read re_fs_spec < "$tmpd"/re_fs_spec
+mkdir -p "$p"
+n=$(echo "$F4_SEARCH_IN" | sed -E "s/[^-_.[:alnum:]]/+/g")
+savef="$p/$n"
+if [ "$do_backup" ] && [ -e "$savef" ]; then
+	cp -f --backup=t "$savef" "$savef" # GNU cp
+fi
+file_format_version=1 # https://en.wikipedia.org/wiki/ISO_8601
+echo "f4: $file_format_version
+timestamp: $(date -Iseconds)
+compression: gzip
+search_in: $F4_SEARCH_IN
+query: $query
+re_fp_glob: $re_fp_glob
+re_fs_spec: $re_fs_spec
+" > "$savef"
+gzip -c "$listf" >> "$savef"
+'
+chmod +x "$TMPD"/*.sh # {{{2}}}
+
+# --- Initialization ------------------------------------------------------{{{1
+
+set +f
+chmod 700 "$TMPD"/fe_*       # set exclusive expressions readable/unchecked
+chmod 700 "$TMPD"/fi_*       # set inclusive expressions readable/checked
+
+# Apply user overrides, if any
+F4_EXPANDER=${F4_EXPANDER:-false}
+
+case $F4_FOLLOW_SYMLINKS in
+	true ) printf true  > "$TMPD"/fo_L; printf false > "$TMPD"/fo_P ;;
+	false) printf false > "$TMPD"/fo_L; printf true  > "$TMPD"/fo_P ;;
+esac
+
+: > "$TMPD"/run_source; : > "$TMPD"/iterate_search.sh
+chmod +x "$TMPD"/run_source "$TMPD"/iterate_search.sh
+
+echo false > "$TMPD"/hotkey_f1
+f1_lbl=${hotkey_f1#*:}; f1_lbl=${f1_lbl%:*}
+f2_lbl=${hotkey_f2#*:}; f2_lbl=${f2_lbl%:*}
+f3_lbl=${hotkey_f3#*:}; f3_lbl=${f3_lbl%:*}
+printf > "$TMPD"/i18n_press_key \
+	"\302\240\302\240\302\240${i18n_press_key__fmt}\n" "$f1_lbl" "$f2_lbl" "$f3_lbl"
+{ read press_f1; read press_f2; read press_f3; } < "$TMPD"/i18n_press_key
+help_button="${F4_BROWSER:-${BROWSER:-xdg-open}} file://\$(\"$TMPD\"/get_help_path.sh)/index.html >/dev/null 2>&1"
+
+# --- GUI definition ------------------------------------------------------{{{1
 
 export GUI_MAIN='
-<window title="'"$(gettext "File search")"'" resizable="true" icon-name="gtk-find" window-position="1">
+<window title="'"$i18n_gui_main_title$sign"'" resizable="true" '"$app_icon"' window-position="1">
 	<vbox>
-		<hbox>
-			<comboboxtext space-fill="true" space-expand="true"
-				has-focus="false" sensitive="true"
-				fs-action="folder"
-				fs-filters-mime="inode/directory|inode/mount-point"
-				fs-folder="$CWD"
-				fs-title="'"$i18n_select_folder"'">
-				<variable>CWD</variable>
-				<input file>'"$TMPD/cwd"'</input>
-				<action signal="changed">command:echo "$CWD" > "$TMPD"/cwd</action>
-				<action signal="changed">command:"$TMPD"/refresh-vte</action>
-			</comboboxtext>
+		<expander space-expand="false" space-fill="false" expanded="'"$F4_EXPANDER"'" label-fill="false"
+			sensitive="'"$expander_sensitive"'">
+			<vbox>
+				<hbox>
+					<frame '"$i18n_List"'>
+						<hbox>
+							<vbox>
+								<checkbox>
+									<label>"'"$i18n_Files"'"</label>
+									<input>! [ -x "$TMPD"/fi_type_f ]; echo $?</input>
+									<action>if true  chmod 700 "$TMPD"/fi_type_f</action>
+									<action>if false chmod 600 "$TMPD"/fi_type_f</action>
+									<action signal="toggled">command:"$TMPD"/iterate_search.sh</action>
+									<action signal="toggled">grabfocus:F4_VTE</action>
+								</checkbox>
+								<checkbox>
+									<label>"'"$i18n_Folders"'"</label>
+									<input>! [ -x "$TMPD"/fi_type_d ]; echo $?</input>
+									<action>if true  chmod 700 "$TMPD"/fi_type_d</action>
+									<action>if false chmod 600 "$TMPD"/fi_type_d</action>
+									<action signal="toggled">command:"$TMPD"/iterate_search.sh</action>
+									<action signal="toggled">grabfocus:F4_VTE</action>
+								</checkbox>
+								<checkbox tooltip-markup="'"$i18n_symbolic_links"'">
+									<label>"'"$i18n_Links"'"</label>
+									<input>! [ -x "$TMPD"/fi_type_l ]; echo $?</input>
+									<action>if true  chmod 700 "$TMPD"/fi_type_l</action>
+									<action>if false chmod 600 "$TMPD"/fi_type_l</action>
+									<action signal="toggled">command:"$TMPD"/iterate_search.sh</action>
+									<action signal="toggled">grabfocus:F4_VTE</action>
+								</checkbox>
+							</vbox>
+							<vbox>
+								<entry has-frame="false" editable="false" xalign="0.5" width-request="1"
+									primary-icon-name="gtk-help" secondary-icon-name="gtk-help">
+									<default>'"$i18n_Help"'</default>
+									<variable exported="false">button_help</variable>
+									<action signal="button-press-event">command:'"$help_button &"'</action>
+									<action signal="button-press-event">grabfocus:F4_VTE</action>
+									<action signal="activate">command:'"$help_button &"'</action>
+									<action signal="activate">grabfocus:F4_VTE</action>
+								</entry>
+								<checkbox>
+									<label>"'"$i18n_Hidden"'"</label>
+									'"${REMARK# toggles both fe_hidden_d and fe_hidden_a}"'
+									<variable>fe_hidden_d_a</variable>
+									<input>[ -x "$TMPD"/fe_hidden_d ]; echo $?</input>
+									<action>command:set +f; $fe_hidden_d_a; chmod $(($? ? 700 : 600)) "$TMPD"/fe_hidden_[da]</action>
+									<action signal="toggled">command:"$TMPD"/iterate_search.sh</action>
+									<action signal="toggled">grabfocus:F4_VTE</action>
+								</checkbox>
+								<checkbox tooltip-markup="'"$i18n_follow_links_tooltip"'">
+									<label>"'"$i18n_Follow_links"'"</label>
+									<variable>fo_L</variable>
+									<input file>'"$TMPD"/fo_L'</input>
+									<output file>'"$TMPD"/fo_L'</output>
+									<action signal="toggled">save:fo_L</action>
+									<action signal="toggled">if true  printf false > "$TMPD"/fo_P</action>
+									<action signal="toggled">if false printf true  > "$TMPD"/fo_P</action>
+									<action signal="toggled">command:"$TMPD"/iterate_search.sh</action>
+									<action signal="toggled">grabfocus:F4_VTE</action>
+								</checkbox>
+							</vbox>
+						</hbox>
+					</frame>
 
-			<button space-fill="false" space-expand="false" tooltip-text="'"$i18n_select_folder"'">
-				<input file stock="gtk-open"></input>
-				<action>fileselect:cwd</action>
-			</button>
+					'"${REMARK# this vbox makes the frame above as narrow as possible}"'
+					<vbox space-expand="false"><text><label>" "</label></text></vbox>
+					'"${REMARK# alas if the frame below is visible, it expands to the max width of the text inside its comboboxtexts}"'
 
+					<frame>
+						<hbox>
+							<vbox>
+								<hbox space-expand="false">
+									<button space-fill="false" space-expand="false" tooltip-markup="'"<b>$i18n_select_folder$press_f2</b>"'">
+										<input file stock="gtk-open"></input>
+										<action>command:"$TMPD"/folder_browser.sh "$F4_SEARCH_IN"</action>
+									</button>
+									'"${REMARK# sub-script folder_browser.sh and this combobox work in tandem}"'
+									<comboboxtext space-fill="true" space-expand="true" has-focus="false"
+										tooltip-markup="'"$i18n_search_in_tooltip"'"
+										auto-refresh="true">
+										<variable>F4_SEARCH_IN</variable>
+										<input file>'"$TMPD"/search_in'</input>
+										<output file>'"$TMPD"/search_in.hist'</output>
+										<action signal="changed">save:F4_SEARCH_IN</action>
+										<action signal="changed">command:exec > "$TMPD"/search_in; echo "$F4_SEARCH_IN"; grep -Fvx "$F4_SEARCH_IN" "$TMPD"/search_in.hist</action>
+										<action signal="changed">command:"$TMPD"/iterate_search.sh</action>
+										<action signal="changed">grabfocus:F4_VTE</action>
+									</comboboxtext>
+								</hbox>
+
+								<hbox space-expand="false">
+									<button space-fill="false" space-expand="false" tooltip-markup="'"<b>$i18n_edit_re_fp_glob_tooltip$press_f3</b>"'">
+										<input file stock="gtk-edit"></input>
+										<action>launch:GUI_re_fp_glob</action>
+									</button>
+									<comboboxtext space-fill="true" space-expand="true" has-focus="false"
+										tooltip-markup="'"$i18n_re_fp_glob_tooltip"'">
+										<variable>re_fp_glob</variable>
+										<input file>'"$TMPD"/re_fp_glob'</input>
+										<output file>'"$TMPD"/re_fp_glob'</output>
+										<action signal="changed">command:echo "$re_fp_glob" > "$TMPD"/re_fp_glob</action>
+										<action signal="changed">command:"$TMPD"/iterate_search.sh</action>
+										<action signal="changed">grabfocus:F4_VTE</action>
+									</comboboxtext>
+								</hbox>
+
+								<hbox space-expand="false">
+									<button space-fill="false" space-expand="false" tooltip-markup="'"$i18n_edit_re_fs_spec_tooltip"'">
+										<input file stock="gtk-edit"></input>
+										<action>launch:GUI_re_fs_spec</action>
+									</button>
+									<comboboxtext space-fill="true" space-expand="true" has-focus="false"
+										tooltip-markup="'"$i18n_re_fs_spec_tooltip"'">
+										<variable>re_fs_spec</variable>
+										<input file>'"$TMPD"/re_fs_spec'</input>
+										<output file>'"$TMPD"/re_fs_spec'</output>
+										<action signal="changed">command:echo "$re_fs_spec" > "$TMPD"/re_fs_spec</action>
+										<action signal="changed">command:"$TMPD"/iterate_search.sh</action>
+										<action signal="changed">grabfocus:F4_VTE</action>
+									</comboboxtext>
+								</hbox>
+							</vbox>
+						</hbox>
+					</frame>
+				</hbox>
+
+			</vbox>
+
+			<variable>expander</variable>
+			<action>if true grabfocus:button_help</action>
+			<action>if false grabfocus:F4_VTE</action>
+			<action>command:echo $expander > "$TMPD"/hotkey_f1</action>
+			<action>refresh:hotkey_f1</action>
+			<label>"'"$i18n_expander_label$press_f1"'"</label>
+		</expander>
+
+		<hbox space-expand="true" space-fill="true">
+			<terminal has-focus="true" sensitive="true"
+				argv0="'"$TMPD/run_search.sh"'"
+				font-name="'"$font_name"'"
+				pointer-autohide="true"
+				cursor-shape="'"$cursor_shape"'"
+				cursor-background-color="'"$cursor_bg_color"'"
+				text-background-color="'"$bg_color"'"
+				text-foreground-color="'"$fg_color"'">
+				<variable>F4_VTE</variable>
+				<action signal="child-exited">exit:ok</action>
+			</terminal>
 		</hbox>
 
-		<terminal has-focus="true" sensitive="true"
-			'"$argv"'
-			pointer-autohide="true"
-			cursor-shape="2"
-			text-background-color="#332"
-			text-foreground-color="#fff">
-			<variable export="false">vte</variable>
-			<action signal="child-exited">exit:ok</action>
-		</terminal>
-
-		<hbox>
-			<text xalign="0" max-width-chars="200" space-fill="true" space-expand="true">
-				<label>"'"$i18n_short_help"'"</label>
-			</text>
-
-			<button space-fill="false" space-expand="false" tooltip-text="'"$i18n_powered_by"'">
-				<input file stock="gtk-help"></input>
-				<action>command:xdg-open "'"$fzf_help_url"'"</action>
-			</button>
-
-		</hbox>
+		'${REMARK# hotkeys activated by menu items}'
+		<vbox space-expand="false" space-fill="false">
+			<menubar height-request="1" width-request="1">
+				<menu>
+					<menuitem label="'"$i18n_expander_label"'" accel-key="'"${hotkey_f1##*:}"'" accel-mods="'"${hotkey_f1%%:*}"'">
+						<action>command:[ true = $hotkey_f1 ]; echo $? >"$TMPD"/hotkey_f1</action>
+						<action>refresh:hotkey_f1</action>
+					</menuitem>
+					<menuitem label="'"$i18n_select_folder"'" accel-key="'"${hotkey_f2##*:}"'" accel-mods="'"${hotkey_f2%%:*}"'">
+						<action>command:"$TMPD"/folder_browser.sh "$F4_SEARCH_IN"</action>
+					</menuitem>
+					<menuitem label="'"$i18n_edit_re_fp_glob_tooltip"'" accel-key="'"${hotkey_f3##*:}"'" accel-mods="'"${hotkey_f3%%:*}"'">
+						<action>launch:GUI_re_fp_glob</action>
+					</menuitem>
+					<menuitem label="'"$i18n_Open_cache_folder"'" accel-key="'"${hotkey_f4##*:}"'" accel-mods="'"${hotkey_f4%%:*}"'">
+						<action>command:'"$folder_open \"$cache_path\""' &</action>
+					</menuitem>
+					'"${REMARK# exiting f4 with escape implies that fzf will not get escape key events}"'
+					<menuitem label="'"$i18n_Quit"'" accel-key="'"${hotkey_esc##*:}"'" accel-mods="'"${hotkey_esc%%:*}"'">
+						<action>exit:cancel</action>
+					</menuitem>
+					<label>""</label>
+				</menu>
+			</menubar>
+			'${REMARK# true=button_help has focus and expander is open, false=vte has focus and expander is dontcare}'
+			<checkbox visible="false">
+				<variable>hotkey_f1</variable>
+				<input file>'"$TMPD"/hotkey_f1'</input>
+				<label>"'"$hotkey_f1"'"</label>
+				<action condition="command_is_false([ false = $expander -a true = $hotkey_f1 ]; echo $?)">activate:expander</action>
+				<action>if true grabfocus:button_help</action>
+				<action>if false grabfocus:F4_VTE</action>
+			</checkbox>
+		</vbox>
 
 	</vbox>
-	<action signal="delete-event">exit:abort</action>
+	<action signal="configure-event">command:echo hurry-up-vte >/dev/null</action>
+	<action signal="configure-event">command:echo $F4_VTE > "$TMPD"/pid</action>
+	<action signal="delete-event">exit:close</action>
 </window>'
 
-$GTKDIALOG --space-expand=true --space-fill=true --program=GUI_MAIN > /dev/null
+export GUI_re_fp_glob='
+<window title="'"$i18n_gui_re_fp_glob_title$sign"'" width-request="580" resizable="true" '"$app_icon"' window-position="1">
+	<vbox>
+		<text><label>"'"$i18n_gui_re_fp_glob_entry"'"</label></text>
+		<entry>
+			<variable>entry</variable>
+			<input>echo "$re_fp_glob"</input>
+			<action signal="activate">save:re_fp_glob</action>
+			<action signal="activate">command:sed -i -e "1i $entry" "$TMPD"/re_fp_glob</action>
+			<action signal="activate">refresh:re_fp_glob</action>
+			<action signal="activate">closewindow:GUI_re_fp_glob</action>
+		</entry>
+		<text use-markup="true" width-request="560">
+			<label>"'"$i18n_re_fp_glob_desc"'"</label>
+		</text>
+	</vbox>
+	<variable>GUI_re_fp_glob</variable>
+	<action signal="delete-event">closewindow:GUI_re_fp_glob</action>
+	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true)">closewindow:GUI_re_fp_glob</action>
+</window>'
+
+export GUI_re_fs_spec='
+<window title="'"$i18n_gui_re_fs_spec_title$sign"'" width-request="580" resizable="true" '"$app_icon"' window-position="1">
+	<vbox>
+		<text><label>"'"$i18n_gui_re_fs_spec_entry"'"</label></text>
+		<entry>
+			<variable>entry</variable>
+			<input>echo "$re_fs_spec"</input>
+			<action signal="activate">save:re_fs_spec</action>
+			<action signal="activate">command:sed -i -e "1i $entry" "$TMPD"/re_fs_spec</action>
+			<action signal="activate">refresh:re_fs_spec</action>
+			<action signal="activate">closewindow:GUI_re_fs_spec</action>
+		</entry>
+		<text use-markup="true" width-request="560">
+			<label>"'"$i18n_re_fs_spec_desc"'"</label>
+		</text>
+	</vbox>
+	<variable>GUI_re_fs_spec</variable>
+	<action signal="delete-event">closewindow:GUI_re_fs_spec</action>
+	<action signal="key-press-event" condition="command_is_true([ $KEY_SYM = Escape ] && echo true)">closewindow:GUI_re_fs_spec</action>
+</window>'
+
+# --- Main ----------------------------------------------------------------{{{1
+
+if [ "$F4_DEBUG" ]; then
+	echo "$GUI_MAIN$GUI_re_fp_glob$GUI_re_fs_spec" > "$TMPD"/gui
+fi
+
+cd "$search_in" && pwd > "$TMPD"/search_in && cd - >/dev/null || exit 1
+
+${F4_GTKDIALOG:-gtkdialog} --space-expand=true --space-fill=true --program=GUI_MAIN > /dev/null
 
 STATUS=$?
 
