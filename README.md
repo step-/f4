@@ -74,4 +74,5 @@ step
 [github.com/step-/f4/releases](https://github.com/step-/f4/releases)
 
 **:2** forum thread
-[]()
+[puppy forum support thread](https://forum.puppylinux.com/viewtopic.php?f=101&t=2153)
+
