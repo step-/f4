@@ -1,6 +1,6 @@
 #!/bin/sh
 # ^^^^^^^ the main script targets the POSIX shell; sub-scripts use bash for now
-# vim:noet ts=4 noet:
+# vim:noet ts=4 sw=0:
 
 # f4 - fuzzy file finder CLI in a GTK dialog
 Version=1.0.0
@@ -35,7 +35,7 @@ fg_color=${x%% *}; x=${x#$fg_color }
 cursor_bg_color=${x%% *}; x=${x#$cursor_bg_color }
 cursor_shape=$x
 # for dark theme terminal
-fzf_palette="${F4_THEME_FZF:-bg:235,bg+:234,fg:252,fg+:252,info:143,border:240,spinner:108,hl:65,header:143,pointer:160,marker:231,prompt:143,hl+:108,preview-bg:235,preview-fg:252}"
+fzf_palette="${F4_THEME_FZF:-bg:235,bg+:234,fg:252,fg+:252,info:143,border:240,spinner:108,hl:65,header:143,pointer:160,marker:231,prompt:143,hl+:108,preview-bg:235,preview-fg:252,query:108}"
 theme_bat="${F4_THEME_BAT:-Coldark-Dark}"
 
 hotkey_esc="${F4_HOTKEY_ESC:-0:ESC:0xff1b}"
